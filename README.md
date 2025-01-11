@@ -1,8 +1,21 @@
 # Dependency-Updater Script Documentation
 
-[TOC]
-
 This script automates the process of updating dependencies for Node.js, Python, and Docker projects. It detects the type of dependency file, updates the dependencies, runs tests, generates changelogs, commits the changes, and creates a pull request.
+
+## Table of Contents
+
+1. [Prerequisites](#prerequisites)
+2. [Script Overview](#script-overview)
+   1. [Constants](#constants)
+   2. [Functions](#functions)
+      1. [dependencies_detection](#dependencies_detection)
+      2. [dependencies_update](#dependencies_update)
+      3. [run_test](#run_test)
+      4. [generate_changelog](#generate_changelog)
+      5. [commit_and_push](#commit_and_push)
+      6. [create_pull_request](#create_pull_request)
+   3. [Main Function](#main-function)
+3. [Usage](#usage)
 
 ## Prerequisites
 
@@ -87,3 +100,4 @@ To run the script, execute the following command in the terminal:
 ```sh
 chmod +x update_dependencies.sh
 ./update_dependencies.sh
+```
