@@ -30,7 +30,7 @@ jobs:
       run: |
         npm install -g npm-check-updates
         pip install pip-review
-        winget install --id GitHub.cli
+        sudo apt-get update && sudo apt-get install -y gh
 
     - name: Run Dependency Updater Script
       run: bash dependency-updater.sh
