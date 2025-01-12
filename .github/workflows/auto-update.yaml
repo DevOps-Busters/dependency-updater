@@ -1,0 +1,41 @@
+name: Auto-Dependency-Updater
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  update_dependencies:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        npm install -g npm-check-updates
+        pip install pip-review
+        winget install --id GitHub.cli
+
+    - name: Run Dependency Updater Script
+      run: bash dependency-updater.sh
+    
+    - name: Review results
+      if: failure()
+      run: echo "Dependency Update Failed. Check the logs for finding bugs."
+
