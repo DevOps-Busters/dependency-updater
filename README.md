@@ -92,12 +92,3 @@ The main function orchestrates the entire process:
 4. Generates the changelog.
 5. Commits and pushes the changes.
 6. Creates a pull request.
-
-## Usage
-
-To run the script, execute the following command in the terminal:
-
-```sh
-chmod +x update_dependencies.sh
-./update_dependencies.sh
-```
