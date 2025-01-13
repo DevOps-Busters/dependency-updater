@@ -38,8 +38,8 @@ jobs:
         USERNAME: "apoorv-katiyar"
         EMAILID: "katiyar.apoorv97@gmail.com"
       run: |
-        git config --global user.name "${env.USERNAME}"
-        git config --global user.email "${env.EMAILID}"
+        git config --global user.name "$USERNAME"
+        git config --global user.email "$EMAILID"
 
     - name: Run Dependency Updater Script
       run: bash dependency-updater.sh
