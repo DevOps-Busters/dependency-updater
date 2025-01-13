@@ -15,7 +15,7 @@ jobs:
       TOKEN: ${{ secrets.TOKEN }}
       USERNAME: "apoorv-katiyar"
       EMAILID: "katiyar.apoorv97@gmail.com"
-    
+
     permissions:
       contents: write
       pull-requests: write
@@ -24,17 +24,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    
-    - name: Install dependencies
+    - name: Install required dependencies
       run: |
         npm install -g npm-check-updates
         pip install pip-review
@@ -50,9 +40,10 @@ jobs:
         GH_TOKEN: ${{ secrets.TOKEN }}
       run: |
         echo "Running Dependency Updater Script..."
-        bash dependency-updater.sh
-        echo "Dependency Update Successful..."
+        bash dependency-updater.sh || exit 1
+        echo "Dependency update completed successfully."
 
     - name: Review results
       if: failure()
-      run: echo "Dependency Update Failed. Check the logs for finding bugs."
+      run: |
+        echo "Dependency Update Failed. Check the logs for details."

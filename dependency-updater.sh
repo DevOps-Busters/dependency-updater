@@ -2,17 +2,14 @@
 
 set -e
 
+# Constants
 COMMIT_MESSAGE="Upgraded Dependencies"
 MAIN_BRANCH="main"
 
-# dynamic branch-name
-generate_branch_name() {
-    local username=$(whoami) 
-    local timestamp=$(date +%Y%m%d%H%M%S) 
-    echo "${username}-dep-updates-${timestamp}"
-}
+# Dynamic branch name
+BRANCH_NAME="${GITHUB_ACTOR}-dep-updates"
 
-# Detection of Dependencies files
+# Detect Dependencies files
 dependencies_detection() {
     if [[ -f "package.json" ]]; then
         echo "package.json"
@@ -87,33 +84,30 @@ generate_changelog() {
 # Commit and push changes
 commit_and_push() {
     echo "Committing and pushing changes..."
-    local branch_name="$1"
-    git checkout -b "$branch_name"
+    git checkout -b "$BRANCH_NAME"
     git add .
     git commit -m "$COMMIT_MESSAGE"
-    git push -u origin "$branch_name"
+    git push -u origin "$BRANCH_NAME"
     echo "Changes committed and pushed successfully"
 }
 
 # Create pull request
 create_pull_request() {
     echo "Creating pull request..."
-    gh pr create --title "Dependency updates" --body "$(cat changelog.txt)" --base "$MAIN_BRANCH" --head "$1"
+    gh pr create --title "Dependency updates" --body "$(cat changelog.txt)" --base "$MAIN_BRANCH" --head "$BRANCH_NAME"
     echo "Pull request created successfully"
 }
 
 # Main function
 main() {
-    local branch_name=$(generate_branch_name)
     file=$(dependencies_detection)
     echo "Detected dependencies file: $file"
-    echo "Using branch name: $branch_name"
 
     dependencies_update "$file"
     run_test
     generate_changelog "$file"
-    commit_and_push "$branch_name"
-    create_pull_request "$branch_name"
+    commit_and_push
+    create_pull_request
 
     echo "Dependency update process completed successfully"
 }
