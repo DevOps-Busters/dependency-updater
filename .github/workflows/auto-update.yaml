@@ -11,6 +11,14 @@ on:
 jobs:
   update_dependencies:
     runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.TOKEN }}
+      USERNAME: "apoorv-katiyar"
+      EMAILID: "katiyar.apoorv97@gmail.com"
+    
+    permissions:
+      contents: write
+      # pull-requests: write
     
     steps:
     - name: Checkout code
@@ -33,13 +41,13 @@ jobs:
         sudo apt-get update && sudo apt-get install -y gh
 
     - name: Configure Git
-      env:
-        TOKEN: ${{ secrets.TOKEN }}
-        USERNAME: "apoorv-katiyar"
-        EMAILID: "katiyar.apoorv97@gmail.com"
       run: |
         git config --global user.name "$USERNAME"
         git config --global user.email "$EMAILID"
+
+    - name: Authenticate with GitHub
+      run: |
+        git remote set-url origin https://x-access-token:${{ env.TOKEN }}@github.com/${{ github.repository }}
 
     - name: Run Dependency Updater Script
       run: bash dependency-updater.sh
