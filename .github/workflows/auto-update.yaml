@@ -50,7 +50,10 @@ jobs:
         git remote set-url origin https://x-access-token:${{ env.TOKEN }}@github.com/${{ github.repository }}
 
     - name: Run Dependency Updater Script
-      run: bash dependency-updater.sh
+      run:  |
+        echo" Running Dependency Updater Script" 
+        bash dependency-updater.sh
+        echo "Dependency Update Successful"
     
     - name: Review results
       if: failure()
