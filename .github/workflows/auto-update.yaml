@@ -35,8 +35,8 @@ jobs:
     - name: Configure Git
       env:
         TOKEN: ${{ secrets.TOKEN }}
-        USERNAME: ${{ secrets.GITHUB_USER }}
-        EMAILID: ${{ secrets.EMAILID }}
+        USERNAME: "apoorv-katiyar"
+        EMAILID: "katiyar.apoorv97@gmail.com"
       run: |
         git config --global user.name "${env.USERNAME}"
         git config --global user.email "${env.EMAILID}"
