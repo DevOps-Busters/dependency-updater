@@ -51,9 +51,9 @@ jobs:
 
     - name: Run Dependency Updater Script
       run:  |
-        echo" Running Dependency Updater Script" 
+        echo "Running Dependency Updater Script..." 
         bash dependency-updater.sh
-        echo "Dependency Update Successful"
+        echo "Dependency Update Successful..."
     
     - name: Review results
       if: failure()
