@@ -2,21 +2,21 @@
 
 set -e
 
-#constants
+# Constants
 BRANCH_NAME="dep-updates"
 COMMIT_MESSAGE="Upgraded Dependencies"
 MAIN_BRANCH="main"
 
-#Detect Dependencies files
+# Detect Dependencies files
 dependencies_detection() {
     if [[ -f "package.json" ]]; then
-        echo "package.json found"
+        echo "package.json"
     elif [[ -f "requirements.txt" ]]; then
-        echo "requirements.txt found"
+        echo "requirements.txt"
     elif [[ -f "Dockerfile" ]]; then
-        echo "Dockerfile found"
+        echo "Dockerfile"
     else 
-        echo "No Dependencies file found"
+        echo "No dependencies file found"
         exit 1
     fi
 }
@@ -41,7 +41,7 @@ dependencies_update() {
                 latest_image=$(docker pull $base_image | grep "latest" | awk '{print $NF}')
                 sed -i "s|$base_image|$latest_image|g" Dockerfile
             fi
-            done <Dockerfile
+        done <Dockerfile
         ;;
     *)
         echo "Unsupported dependencies file format: $1"
@@ -53,17 +53,15 @@ dependencies_update() {
 # Run tests
 run_test() {
     echo "Running tests..."
-    if [ -f "package.json" ]; then
+    if [[ -f "package.json" ]]; then
         npm test || { echo "Tests failed"; exit 1; }
-
-    elif [ -f "requirements.txt" ]; then
+    elif [[ -f "requirements.txt" ]]; then
         pytest || { echo "Tests failed"; exit 1; }
     fi
     echo "All tests passed successfully"
 }
 
 # Generate the Changelogs
-
 generate_changelog() {
     echo "Generating Changelogs..."
     case "$1" in
@@ -94,7 +92,7 @@ commit_and_push() {
 # Create pull request
 create_pull_request() {
     echo "Creating pull request..."
-    gh pr create --title "Dependency updates" --body "${cat changelog.txt}" --base "$MAIN_BRANCH" --head "$BRANCH_NAME"
+    gh pr create --title "Dependency updates" --body "$(cat changelog.txt)" --base "$MAIN_BRANCH" --head "$BRANCH_NAME"
     echo "Pull request created successfully"
 }
 
@@ -112,4 +110,4 @@ main() {
     echo "Dependency update process completed successfully"
 }
 
-main 
+main
