@@ -18,8 +18,8 @@ jobs:
     
     permissions:
       contents: write
-      # pull-requests: write
-    
+      pull-requests: write
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -45,11 +45,15 @@ jobs:
         git config --global user.name "$USERNAME"
         git config --global user.email "$EMAILID"
 
-    - name: Authenticate with GitHub
+    - name: Authenticate with GitHub CLI
       run: |
-        git remote set-url origin https://x-access-token:${{ env.TOKEN }}@github.com/${{ github.repository }}
+        echo "${{ secrets.TOKEN }}" | gh auth login --with-token
+      env:
+        GH_TOKEN: ${{ secrets.TOKEN }}
 
     - name: Run Dependency Updater Script
+      env: 
+        GH_TOKEN: ${{ secrets.TOKEN }}
       run:  |
         echo "Running Dependency Updater Script..." 
         bash dependency-updater.sh
