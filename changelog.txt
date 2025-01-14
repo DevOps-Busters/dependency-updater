@@ -1,0 +1,3 @@
+Checking /home/runner/work/dependency-updater/dependency-updater/package.json
+
+All dependencies match the latest package versions :)
