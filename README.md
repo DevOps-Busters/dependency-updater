@@ -17,7 +17,7 @@ This script automates the process of updating dependencies for Node.js, Python, 
    3. [Main Function](#main-function)
 3. [Usage](#usage)
 
-## Prerequisites
+## Prerequisites ##
 
 - **Node.js and npm** (for Node.js projects)
 - **ncu (npm-check-updates)** installed globally (`npm install -g npm-check-updates`)
