@@ -29,12 +29,15 @@ jobs:
       with:
         node-version: '16'  # Adjust to your Node.js version
 
-    - name: Install required dependencies
+    - name: Install Python and required dependencies
       run: |
-        # Install Python and pip
+        # Install Python and pip first
         sudo apt-get update
+        sudo apt-get install -y python3 python3-pip python3-venv build-essential python3-dev
+        pip install --upgrade pip setuptools
+
+        # Install dependencies from requirements.txt
         pip install -r requirements.txt
-        sudo apt-get install -y python3 python3-pip python3-venv jq
 
         # Install Node.js tools
         npm install -g npm-check-updates
