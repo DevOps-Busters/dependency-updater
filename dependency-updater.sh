@@ -58,7 +58,6 @@ dependencies_update() {
 
                 if [[ -n "$latest_tag" && "$base_image" != "$image_name:$latest_tag" ]]; then
                     new_image="$image_name:$latest_tag"
-                    echo "✅ Updating $base_image → $new_image"
                     line="FROM $new_image"
                 fi
             fi
