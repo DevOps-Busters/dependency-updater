@@ -9,6 +9,17 @@ MAIN_BRANCH="main"
 # Dynamic branch name
 BRANCH_NAME="${GITHUB_ACTOR}-dep-updates"
 
+# Check if necessary tools are installed
+check_dependencies() {
+    if ! command -v gh &> /dev/null; then
+        echo "GitHub CLI (gh) is not installed. Please install it."
+        exit 1
+    fi
+    if ! command -v ncu &> /dev/null; then
+        npm install -g npm-check-updates
+    fi
+}
+
 # Detect Dependencies files
 dependencies_detection() {
     if [[ -f "package.json" ]]; then
@@ -33,14 +44,14 @@ dependencies_update() {
         ;;
     "requirements.txt")
         echo "Updating Python dependencies... "
-        pip-review --auto
+        pip list --outdated --format=freeze | cut -d= -f1 | xargs -n1 pip install -U
         ;;
     "Dockerfile")
         echo "Updating Docker dependencies... "
         while IFS= read -r line; do
             if [[ $line == *"FROM"* ]]; then
                 base_image=$(echo $line | awk '{print $2}')
-                latest_image=$(docker pull $base_image | grep "latest" | awk '{print $NF}')
+                latest_image=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "^$base_image" | head -n1)
                 sed -i "s|$base_image|$latest_image|g" Dockerfile
             fi
         done <Dockerfile
@@ -71,7 +82,7 @@ generate_changelog() {
         ncu > changelog.txt
         ;;
     "requirements.txt")
-        pip-review > changelog.txt
+        pip list --outdated > changelog.txt
         ;;
     "Dockerfile")
         echo "Updated Docker base image..." > changelog.txt
@@ -84,7 +95,13 @@ generate_changelog() {
 # Commit and push changes
 commit_and_push() {
     echo "Committing and pushing changes..."
-    git checkout -b "$BRANCH_NAME"
+    git fetch origin
+    if git rev-parse --verify origin/"$BRANCH_NAME"; then
+        git checkout "$BRANCH_NAME"
+        git pull
+    else
+        git checkout -b "$BRANCH_NAME"
+    fi
     git add .
     git commit -m "$COMMIT_MESSAGE"
     git push -u origin "$BRANCH_NAME"
@@ -94,12 +111,16 @@ commit_and_push() {
 # Create pull request
 create_pull_request() {
     echo "Creating pull request..."
-    gh pr create --title "Dependency updates" --body "$(cat changelog.txt)" --base "$MAIN_BRANCH" --head "$BRANCH_NAME"
+    gh pr create --title "Dependency updates" --body "$(cat changelog.txt)" --base "$MAIN_BRANCH" --head "$BRANCH_NAME" || {
+        echo "Failed to create pull request"
+        exit 1
+    }
     echo "Pull request created successfully"
 }
 
 # Main function
 main() {
+    check_dependencies
     file=$(dependencies_detection)
     echo "Detected dependencies file: $file"
 
