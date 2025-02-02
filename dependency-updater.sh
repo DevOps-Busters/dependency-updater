@@ -14,19 +14,16 @@ dependencies_detection() {
     echo "📂 Checking for dependencies file..."
     if [[ -f "package.json" ]]; then
         echo "Detected package.json"
-        echo "package.json"
+        echo "package.json"  # Return the file name
     elif [[ -f "requirements.txt" ]]; then
         echo "Detected requirements.txt"
-        echo "requirements.txt"
+        echo "requirements.txt"  # Return the file name
     elif [[ -f "Dockerfile" ]]; then
         echo "Detected Dockerfile"
-        echo "Dockerfile"
-    # elif [[ -f "*.csproj" || -f "*.sln" ]]; then
-    #     echo "Detected .NET project file"
-    #     echo ".NET"
+        echo "Dockerfile"  # Return the file name
     elif [[ -f "pom.xml" || -f "build.gradle" ]]; then
         echo "Detected Java project file"
-        echo "Java"
+        echo "Java"  # Return the file name
     else 
         echo "No dependencies file found"
         exit 1
@@ -35,16 +32,19 @@ dependencies_detection() {
 
 # Update dependencies
 dependencies_update() {
+    echo "🔄 Updating dependencies for $1"
     case "$1" in
     "package.json")
         echo "🔄 Updating Node.js dependencies..."
         ncu -u
         npm install
         ;;
+
     "requirements.txt")
         echo "🔄 Updating Python dependencies..."
         pip list --outdated --format=freeze | cut -d= -f1 | xargs -n1 pip install -U
         ;;
+
     "Dockerfile")
         echo "🔄 Updating Docker base images..."
         tmp_file=$(mktemp)
@@ -76,11 +76,7 @@ dependencies_update() {
 
         mv "$tmp_file" Dockerfile
         ;;
-    # ".NET")
-    #     echo "🔄 Updating .NET dependencies..."
-    #     dotnet restore
-    #     dotnet update
-    #     ;;
+
     "Java")
         echo "🔄 Updating Java dependencies..."
         if [[ -f "pom.xml" ]]; then
@@ -89,6 +85,7 @@ dependencies_update() {
             ./gradlew --refresh-dependencies
         fi
         ;;
+
     *)
         echo "❌ Unsupported dependencies file format: $1"
         exit 1
@@ -105,8 +102,6 @@ run_test() {
         pytest || { echo "❌ Tests failed"; exit 1; }
     elif [[ -f "pom.xml" || -f "build.gradle" ]]; then
         mvn test || { echo "❌ Tests failed"; exit 1; }
-    # elif [[ -f "*.csproj" || -f "*.sln" ]]; then
-    #     dotnet test || { echo "❌ Tests failed"; exit 1; }
     fi
     echo "✅ All tests passed successfully"
 }
@@ -118,18 +113,19 @@ generate_changelog() {
     "package.json")
         ncu > changelog.txt
         ;;
+
     "requirements.txt")
         pip list --outdated > changelog.txt
         ;;
+
     "Dockerfile")
         echo "Updated Docker base images to latest versions." > changelog.txt
         ;;
-    # ".NET")
-    #     echo "Updated .NET dependencies to latest versions." > changelog.txt
-    #     ;;
+
     "Java")
         echo "Updated Java dependencies to latest versions." > changelog.txt
         ;;
+
     esac
     echo "✅ Changelog generated successfully"
     cat changelog.txt

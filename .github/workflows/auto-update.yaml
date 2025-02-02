@@ -2,7 +2,7 @@ name: Auto-Dependency-Updater
 
 on:
   schedule:
-    - cron: '0 0 * * 1'
+    - cron: '0 0 * * 1'  # Run every Monday at midnight
   workflow_dispatch:
   push:
     branches:
@@ -24,13 +24,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'  # Adjust to your Node.js version
+
     - name: Install required dependencies
       run: |
         # Install Python and pip
         sudo apt-get update
-        sudo apt-get install -y python3 python3-pip python3-venv
-        pip install pip-review
-        
+        sudo apt-get install -y python3 python3-pip python3-venv jq
+
         # Install Node.js tools
         npm install -g npm-check-updates
 
