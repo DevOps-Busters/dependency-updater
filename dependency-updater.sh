@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e  # Exit on any error
+set -e
 
 # Constants
 COMMIT_MESSAGE="Upgraded Dependencies"
@@ -8,31 +8,6 @@ MAIN_BRANCH="main"
 
 # Dynamic branch name
 BRANCH_NAME="${GITHUB_ACTOR}-dep-updates"
-
-# Check if necessary tools are installed
-check_dependencies() {
-    echo "Checking required tools..."
-
-    if ! command -v gh &> /dev/null; then
-        echo "❌ GitHub CLI (gh) is not installed. Please install it."
-        exit 1
-    fi
-
-    if ! command -v ncu &> /dev/null; then
-        echo "Installing npm-check-updates..."
-        npm install -g npm-check-updates
-    fi
-
-    if ! command -v pip &> /dev/null; then
-        echo "❌ pip is not installed. Please install it."
-        exit 1
-    fi
-
-    if ! command -v docker &> /dev/null; then
-        echo "❌ Docker is not installed. Please install it."
-        exit 1
-    fi
-}
 
 # Detect Dependencies files
 dependencies_detection() {
@@ -73,14 +48,18 @@ dependencies_update() {
                     continue
                 fi
 
+                # Extract image name (without tag)
+                image_name="${base_image%%:*}"
                 echo "Checking latest version for $base_image..."
-                docker pull "$base_image" &>/dev/null
 
-                latest_image=$(docker inspect --format='{{index .RepoDigests 0}}' "$base_image" 2>/dev/null | cut -d'@' -f1)
+                # Fetch latest tag from Docker Hub API
+                latest_tag=$(curl -s "https://registry.hub.docker.com/v2/repositories/library/$image_name/tags" | \
+                    jq -r '.results[].name' | grep -E '^[0-9]+' | sort -V | tail -n 1)
 
-                if [[ -n "$latest_image" && "$latest_image" != "$base_image" ]]; then
-                    echo "✅ Updating $base_image → $latest_image"
-                    line="FROM $latest_image"
+                if [[ -n "$latest_tag" && "$base_image" != "$image_name:$latest_tag" ]]; then
+                    new_image="$image_name:$latest_tag"
+                    echo "✅ Updating $base_image → $new_image"
+                    line="FROM $new_image"
                 fi
             fi
             echo "$line"
@@ -97,7 +76,7 @@ dependencies_update() {
 
 # Run tests
 run_test() {
-    echo "🛠️ Running tests..."
+    echo "🧪 Running tests..."
     if [[ -f "package.json" ]]; then
         npm test || { echo "❌ Tests failed"; exit 1; }
     elif [[ -f "requirements.txt" ]]; then
@@ -106,9 +85,9 @@ run_test() {
     echo "✅ All tests passed successfully"
 }
 
-# Generate the Changelogs
+# Generate the Changelog
 generate_changelog() {
-    echo "📜 Generating Changelogs..."
+    echo "📝 Generating Changelog..."
     case "$1" in
     "package.json")
         ncu > changelog.txt
@@ -117,30 +96,17 @@ generate_changelog() {
         pip list --outdated > changelog.txt
         ;;
     "Dockerfile")
-        echo "Updated Docker base image..." > changelog.txt
+        echo "Updated Docker base images to latest versions." > changelog.txt
         ;;
     esac
-    echo "✅ Changelogs generated successfully"
+    echo "✅ Changelog generated successfully"
     cat changelog.txt
 }
 
 # Commit and push changes
 commit_and_push() {
-    echo "📤 Committing and pushing changes..."
-    git fetch origin
-
-    if git rev-parse --verify origin/"$BRANCH_NAME" &>/dev/null; then
-        git checkout "$BRANCH_NAME"
-        git pull
-    else
-        git checkout -b "$BRANCH_NAME"
-    fi
-
-    if git diff --quiet; then
-        echo "⚠️ No changes detected, skipping commit."
-        exit 0
-    fi
-
+    echo "📦 Committing and pushing changes..."
+    git checkout -b "$BRANCH_NAME"
     git add .
     git commit -m "$COMMIT_MESSAGE"
     git push -u origin "$BRANCH_NAME"
@@ -150,18 +116,14 @@ commit_and_push() {
 # Create pull request
 create_pull_request() {
     echo "🔀 Creating pull request..."
-    gh pr create --title "Dependency updates" --body "$(cat changelog.txt)" --base "$MAIN_BRANCH" --head "$BRANCH_NAME" || {
-        echo "❌ Failed to create pull request"
-        exit 1
-    }
+    gh pr create --title "Dependency updates" --body "$(cat changelog.txt)" --base "$MAIN_BRANCH" --head "$BRANCH_NAME"
     echo "✅ Pull request created successfully"
 }
 
 # Main function
 main() {
-    check_dependencies
     file=$(dependencies_detection)
-    echo "🔍 Detected dependencies file: $file"
+    echo "📂 Detected dependencies file: $file"
 
     dependencies_update "$file"
     run_test
