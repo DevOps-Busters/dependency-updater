@@ -34,10 +34,13 @@ jobs:
         # Install Node.js tools
         npm install -g npm-check-updates
 
-        # Install .NET SDK
-        sudo apt-get install -y apt-transport-https ca-certificates software-properties-common
-        sudo dotnet-install --version 6.0 --channel 6.0
-        
+        # Install .NET SDK using the official method
+        sudo apt-get install -y wget
+        wget https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-6.0.100-linux-x64-binaries
+        tar -xvf sdk-6.0.100-linux-x64-binaries.tar.gz
+        sudo mv dotnet /usr/local/share/dotnet
+        sudo ln -s /usr/local/share/dotnet/dotnet /usr/local/bin/dotnet
+
         # Install Java (OpenJDK)
         sudo apt-get install -y openjdk-11-jdk
 
