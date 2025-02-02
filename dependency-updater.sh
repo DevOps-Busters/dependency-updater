@@ -21,9 +21,9 @@ dependencies_detection() {
     elif [[ -f "Dockerfile" ]]; then
         echo "Detected Dockerfile"
         echo "Dockerfile"
-    elif [[ -f "*.csproj" || -f "*.sln" ]]; then
-        echo "Detected .NET project file"
-        echo ".NET"
+    # elif [[ -f "*.csproj" || -f "*.sln" ]]; then
+    #     echo "Detected .NET project file"
+    #     echo ".NET"
     elif [[ -f "pom.xml" || -f "build.gradle" ]]; then
         echo "Detected Java project file"
         echo "Java"
@@ -76,11 +76,11 @@ dependencies_update() {
 
         mv "$tmp_file" Dockerfile
         ;;
-    ".NET")
-        echo "🔄 Updating .NET dependencies..."
-        dotnet restore
-        dotnet update
-        ;;
+    # ".NET")
+    #     echo "🔄 Updating .NET dependencies..."
+    #     dotnet restore
+    #     dotnet update
+    #     ;;
     "Java")
         echo "🔄 Updating Java dependencies..."
         if [[ -f "pom.xml" ]]; then
@@ -105,8 +105,8 @@ run_test() {
         pytest || { echo "❌ Tests failed"; exit 1; }
     elif [[ -f "pom.xml" || -f "build.gradle" ]]; then
         mvn test || { echo "❌ Tests failed"; exit 1; }
-    elif [[ -f "*.csproj" || -f "*.sln" ]]; then
-        dotnet test || { echo "❌ Tests failed"; exit 1; }
+    # elif [[ -f "*.csproj" || -f "*.sln" ]]; then
+    #     dotnet test || { echo "❌ Tests failed"; exit 1; }
     fi
     echo "✅ All tests passed successfully"
 }
@@ -124,9 +124,9 @@ generate_changelog() {
     "Dockerfile")
         echo "Updated Docker base images to latest versions." > changelog.txt
         ;;
-    ".NET")
-        echo "Updated .NET dependencies to latest versions." > changelog.txt
-        ;;
+    # ".NET")
+    #     echo "Updated .NET dependencies to latest versions." > changelog.txt
+    #     ;;
     "Java")
         echo "Updated Java dependencies to latest versions." > changelog.txt
         ;;
