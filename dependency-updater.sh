@@ -79,7 +79,19 @@ run_test() {
     if [[ -f "package.json" ]]; then
         npm test || { echo "❌ Tests failed"; exit 1; }
     elif [[ -f "requirements.txt" ]]; then
-        pytest || { echo "❌ Tests failed"; exit 1; }
+        # Check if virtualenv is created, if not, create it
+        if [[ ! -d "venv" ]]; then
+            echo "🔄 Creating virtual environment..."
+            python -m venv venv
+            source venv/bin/activate  # For Linux/macOS
+            venv\Scripts\activate     # For Windows
+            pip install -r requirements.txt
+        else
+            source venv/bin/activate
+        fi
+
+        echo "🔄 Running Python tests with pytest..."
+        pytest -v || { echo "❌ Tests failed"; exit 1; }
     fi
     echo "✅ All tests passed successfully"
 }
