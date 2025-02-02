@@ -1,5 +1,7 @@
 # Use an official Node.js image as the base image
-FROM node:18-alpine
+Checking latest version for node:18-alpine...
+✅ Updating node:18-alpine → node
+FROM node
 
 # Set the working directory inside the container
 WORKDIR /app
