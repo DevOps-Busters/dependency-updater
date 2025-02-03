@@ -38,16 +38,12 @@ dependencies_update() {
 
     "requirements.txt")
         echo "🔄 Updating Python dependencies..."
-        
-        # Extract outdated package names and upgrade them
-        outdated_packages=$(pip list --outdated --format=columns | awk 'NR>2 {print $1}')
 
-        if [[ -n "$outdated_packages" ]]; then
-            echo "Upgrading: $outdated_packages"
-            echo "$outdated_packages" | xargs -n1 pip install --upgrade
-        else
-            echo "✅ All dependencies are already up to date."
-        fi
+        # Only update the packages in requirements.txt that are outdated
+        pip install --upgrade -r requirements.txt || {
+            echo "❌ Error occurred while updating dependencies"
+            exit 1
+        }
         ;;
 
     "Dockerfile")
@@ -63,9 +59,11 @@ dependencies_update() {
                     continue
                 fi
 
+                # Extract image name (without tag)
                 image_name="${base_image%%:*}"
                 echo "Checking latest version for $base_image..."
 
+                # Fetch latest tag from Docker Hub API
                 latest_tag=$(curl -s "https://registry.hub.docker.com/v2/repositories/library/$image_name/tags" | \
                     jq -r '.results[].name' | grep -E '^[0-9]+' | sort -V | tail -n 1)
 
