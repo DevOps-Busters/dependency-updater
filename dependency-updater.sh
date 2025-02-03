@@ -99,15 +99,24 @@ dependencies_update() {
 # Run tests
 run_test() {
     echo "🧪 Running tests..."
+    
     if [[ -f "package.json" ]]; then
         npm test || { echo "❌ Tests failed"; exit 1; }
+    
     elif [[ -f "requirements.txt" ]]; then
+        if ! command -v pytest &> /dev/null; then
+            echo "⚠️ pytest not found. Installing pytest..."
+            pip install pytest
+        fi
         pytest || { echo "❌ Tests failed"; exit 1; }
+    
     elif [[ -f "pom.xml" || -f "build.gradle" ]]; then
         mvn test || { echo "❌ Tests failed"; exit 1; }
     fi
+    
     echo "✅ All tests passed successfully"
 }
+
 
 # Generate the Changelog
 generate_changelog() {
