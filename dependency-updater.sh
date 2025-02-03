@@ -13,17 +13,13 @@ BRANCH_NAME="${GITHUB_ACTOR}-dep-updates"
 dependencies_detection() {
     echo "📂 Checking for dependencies file..."
     if [[ -f "package.json" ]]; then
-        echo "Detected package.json"
-        echo "package.json"  # Return the file name
+        echo "package.json"
     elif [[ -f "requirements.txt" ]]; then
-        echo "Detected requirements.txt"
-        echo "requirements.txt"  # Return the file name
+        echo "requirements.txt"
     elif [[ -f "Dockerfile" ]]; then
-        echo "Detected Dockerfile"
-        echo "Dockerfile"  # Return the file name
+        echo "Dockerfile"
     elif [[ -f "pom.xml" || -f "build.gradle" ]]; then
-        echo "Detected Java project file"
-        echo "Java"  # Return the file name
+        echo "Java"
     else 
         echo "No dependencies file found"
         exit 1
@@ -42,7 +38,7 @@ dependencies_update() {
 
     "requirements.txt")
         echo "🔄 Updating Python dependencies..."
-        pip list --outdated --format=freeze | cut -d= -f1 | xargs -n1 pip install -U
+        pip list --outdated --format=freeze | awk -F '==' '{print $1}' | xargs -n1 pip install -U
         ;;
 
     "Dockerfile")
@@ -58,11 +54,9 @@ dependencies_update() {
                     continue
                 fi
 
-                # Extract image name (without tag)
                 image_name="${base_image%%:*}"
                 echo "Checking latest version for $base_image..."
 
-                # Fetch latest tag from Docker Hub API
                 latest_tag=$(curl -s "https://registry.hub.docker.com/v2/repositories/library/$image_name/tags" | \
                     jq -r '.results[].name' | grep -E '^[0-9]+' | sort -V | tail -n 1)
 
@@ -125,7 +119,6 @@ generate_changelog() {
     "Java")
         echo "Updated Java dependencies to latest versions." > changelog.txt
         ;;
-
     esac
     echo "✅ Changelog generated successfully"
     cat changelog.txt
@@ -150,7 +143,7 @@ create_pull_request() {
 
 # Main function
 main() {
-    file=$(dependencies_detection)
+    file=$(dependencies_detection | tail -n1)  # Fix to capture only the last line (actual filename)
     echo "📂 Detected dependencies file: $file"
 
     dependencies_update "$file"
