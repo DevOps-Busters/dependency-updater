@@ -21,53 +21,59 @@ jobs:
       pull-requests: write
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'  # Adjust to your Node.js version
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"  # Using a stable version
 
-    - name: Install Python and required dependencies
-      run: |
-        # Install Python and pip first
-        sudo apt-get update
-        sudo apt-get install -y python3 python3-pip python3-venv build-essential python3-dev
-        pip install --upgrade pip setuptools
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-venv build-essential python3-dev
+          sudo apt-get install -y openjdk-11-jdk gh  # Java & GitHub CLI
 
-        # Install dependencies from requirements.txt
-        pip install -r requirements.txt
+      - name: Upgrade pip and setuptools
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools==65.5.0  # Pin setuptools version
 
-        # Install Node.js tools
-        npm install -g npm-check-updates
+      - name: Install Python Dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --no-cache-dir -r requirements.txt
 
-        # Install Java (OpenJDK)
-        sudo apt-get install -y openjdk-11-jdk
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Adjust as needed
 
-        # Install GitHub CLI
-        sudo apt-get install -y gh
+      - name: Install Node.js Tools
+        run: |
+          npm install -g npm-check-updates
 
-    - name: Configure Git
-      run: |
-        git config --global user.name "$USERNAME"
-        git config --global user.email "$EMAILID"
+      - name: Configure Git
+        run: |
+          git config --global user.name "$USERNAME"
+          git config --global user.email "$EMAILID"
 
-    - name: Run Dependency Updater Script
-      env:
-        GH_TOKEN: ${{ secrets.TOKEN }}
-      run: |
-        echo "Running Dependency Updater Script..."
-        bash dependency-updater.sh || {
-          echo "❌ Error occurred while running dependency-updater.sh. Check the log below for more details."
+      - name: Run Dependency Updater Script
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          echo "Running Dependency Updater Script..."
+          bash dependency-updater.sh || {
+            echo "❌ Error occurred while running dependency-updater.sh. Check the log below."
+            cat dependency-updater.log
+            exit 1
+          }
+          echo "Dependency update completed successfully."
+
+      - name: Review results if failed
+        if: failure()
+        run: |
+          echo "Dependency Update Failed. Check the logs for details."
           cat dependency-updater.log
-          exit 1
-        }
-        echo "Dependency update completed successfully."
-
-    - name: Review results
-      if: failure()
-      run: |
-        echo "Dependency Update Failed. Check the logs for details."
-        # Print the log file content here for easy debugging
-        cat dependency-updater.log
