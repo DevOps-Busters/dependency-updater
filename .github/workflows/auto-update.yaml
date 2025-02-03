@@ -42,9 +42,7 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install --no-cache-dir -r requirements.txt
+          pip install --no-cache-dir -r requirements.txt  # Install directly without virtual environment
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
