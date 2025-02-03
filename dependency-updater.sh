@@ -38,7 +38,16 @@ dependencies_update() {
 
     "requirements.txt")
         echo "🔄 Updating Python dependencies..."
-        pip list --outdated --format=freeze | awk -F '==' '{print $1}' | xargs -n1 pip install -U
+        
+        # Extract outdated package names and upgrade them
+        outdated_packages=$(pip list --outdated --format=columns | awk 'NR>2 {print $1}')
+
+        if [[ -n "$outdated_packages" ]]; then
+            echo "Upgrading: $outdated_packages"
+            echo "$outdated_packages" | xargs -n1 pip install --upgrade
+        else
+            echo "✅ All dependencies are already up to date."
+        fi
         ;;
 
     "Dockerfile")
@@ -143,7 +152,7 @@ create_pull_request() {
 
 # Main function
 main() {
-    file=$(dependencies_detection | tail -n1)  # Fix to capture only the last line (actual filename)
+    file=$(dependencies_detection | tail -n1)
     echo "📂 Detected dependencies file: $file"
 
     dependencies_update "$file"
