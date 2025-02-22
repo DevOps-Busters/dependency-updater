@@ -1,67 +1,145 @@
-name: Auto-Dependency-Updater
+name: Dependency Auto-Update
 
 on:
   schedule:
-    - cron: '0 0 * * 1'  # Run every Monday at midnight
-  workflow_dispatch:
-  push:
-    branches:
-      - main
+    - cron: '0 0 * * 1' # Runs every Monday at midnight UTC
+  workflow_dispatch: # Allows manual trigger
 
 jobs:
-  update_dependencies:
+  update-dependencies:
     runs-on: ubuntu-latest
-    env:
-      TOKEN: ${{ secrets.TOKEN }}
-      USERNAME: "apoorv-katiyar"
-      EMAILID: "katiyar.apoorv97@gmail.com"
-
-    permissions:
-      contents: write
-      pull-requests: write
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # - name: Set up Python
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: "3.10"  # Using a stable version
-
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-11-jdk gh  # Java & GitHub CLI
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
         with:
-          node-version: '16'  # Adjust as needed
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Install Node.js Tools
+      - name: Setup Python
+        if: hashFiles('requirements.txt') != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Setup Java
+        if: hashFiles('pom.xml', 'build.gradle') != ''
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Install npm-check-updates
+        if: hashFiles('package.json') != ''
+        run: npm install -g npm-check-updates
+
+      - name: Upgrade Node.js Dependencies
+        if: hashFiles('package.json') != ''
         run: |
-          npm install -g npm-check-updates
+          ncu -u
+          npm install
 
-      - name: Configure Git
+      - name: Upgrade Python Dependencies
+        if: hashFiles('requirements.txt') != ''
         run: |
-          git config --global user.name "$USERNAME"
-          git config --global user.email "$EMAILID"
+          pip install --upgrade pip
+          pip list --outdated > outdated_packages.txt
+          outdated_packages=$(awk 'NR>2 {print $1}' outdated_packages.txt)
+          
+          if [[ -n "$outdated_packages" ]]; then
+              echo "Upgrading: $outdated_packages"
+              echo "$outdated_packages" | xargs -n1 pip install --upgrade
+          else
+              echo "✅ All dependencies are already up to date."
+          fi
 
-      - name: Run Dependency Updater Script
+      - name: Upgrade Java Dependencies
+        if: hashFiles('pom.xml') != ''
+        run: mvn versions:use-latest-versions
+
+      - name: Upgrade Gradle Dependencies
+        if: hashFiles('build.gradle') != ''
+        run: ./gradlew --refresh-dependencies
+
+      - name: Upgrade Docker Base Images
+        if: hashFiles('Dockerfile') != ''
+        run: |
+          tmp_file=$(mktemp)
+          while IFS= read -r line; do
+              if [[ $line == FROM* ]]; then
+                  base_image=$(echo "$line" | awk '{print $2}')
+                  image_name="${base_image%%:*}"
+                  latest_tag=$(curl -s "https://registry.hub.docker.com/v2/repositories/library/$image_name/tags" | \
+                      jq -r '.results[].name' | grep -E '^[0-9]+' | sort -V | tail -n 1)
+                  
+                  if [[ -n "$latest_tag" && "$base_image" != "$image_name:$latest_tag" ]]; then
+                      new_image="$image_name:$latest_tag"
+                      line="FROM $new_image"
+                  fi
+              fi
+              echo "$line"
+          done < Dockerfile > "$tmp_file"
+          mv "$tmp_file" Dockerfile
+
+      - name: Run Tests (Node.js)
+        if: hashFiles('package.json') != ''
+        run: npm test || { echo "❌ Tests failed"; exit 1; }
+
+      - name: Run Tests (Python)
+        if: hashFiles('requirements.txt') != ''
+        run: |
+          if ! command -v pytest &> /dev/null; then
+              echo "⚠️ pytest not found. Installing pytest..."
+              pip install pytest
+          fi
+          pytest || { echo "❌ Tests failed"; exit 1; }
+
+      - name: Run Tests (Java)
+        if: hashFiles('pom.xml') != ''
+        run: mvn test || { echo "❌ Tests failed"; exit 1; }
+
+      - name: Run Tests (Gradle)
+        if: hashFiles('build.gradle') != ''
+        run: ./gradlew test || { echo "❌ Tests failed"; exit 1; }
+
+      - name: Generate Changelog
+        run: |
+          echo "📝 Generating Changelog..."
+          echo "### Dependency Updates" > changelog.txt
+
+          if [[ -f "package.json" ]]; then
+              ncu > changelog.txt
+          fi
+          if [[ -f "requirements.txt" ]]; then
+              cat outdated_packages.txt >> changelog.txt
+          fi
+          if [[ -f "Dockerfile" ]]; then
+              echo "Updated Docker base images to latest versions." >> changelog.txt
+          fi
+          if [[ -f "pom.xml" || -f "build.gradle" ]]; then
+              echo "Updated Java dependencies to latest versions." >> changelog.txt
+          fi
+          cat changelog.txt
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH_NAME="auto-dep-updates"
+          
+          git checkout -b "$BRANCH_NAME"
+          git add .
+          git commit -m "🔄 Auto-updated dependencies" || exit 0
+          git push -u origin "$BRANCH_NAME" --force
+
+      - name: Create Pull Request
         env:
-          GH_TOKEN: ${{ secrets.TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Running Dependency Updater Script..."
-          bash dependency-updater.sh || {
-            echo "❌ Error occurred while running dependency-updater.sh. Check the log below."
-            cat dependency-updater.log
-            exit 1
-          }
-          echo "Dependency update completed successfully."
-
-      - name: Review results if failed
-        if: failure()
-        run: |
-          echo "Dependency Update Failed. Check the logs for details."
-          cat dependency-updater.log
+          gh pr create --title "🔄 Dependency Updates" --body "$(cat changelog.txt)" --base "main" --head "auto-dep-updates" || echo "PR already exists"
