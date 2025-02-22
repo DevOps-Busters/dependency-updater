@@ -12,9 +12,10 @@ jobs:
   update_dependencies:
     runs-on: ubuntu-latest
     env:
-      TOKEN: ${{ secrets.TOKEN }}
+      TOKEN: ${{ secrets.DEPENDENCY_TOKEN }}
       USERNAME: "apoorv-katiyar"
       EMAILID: "katiyar.apoorv97@gmail.com"
+      GH_TOKEN: ${{ secrets.DEPENDENCY_TOKEN }}  # Make GH_TOKEN available globally
 
     permissions:
       contents: write
@@ -24,15 +25,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # - name: Set up Python
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: "3.10"  # Using a stable version
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"  # Adjust Python version as needed
 
       - name: Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y openjdk-11-jdk gh  # Java & GitHub CLI
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-tools pytest
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -50,18 +56,30 @@ jobs:
 
       - name: Run Dependency Updater Script
         env:
-          GH_TOKEN: ${{ secrets.TOKEN }}
+          # GH_TOKEN is already set globally, but re-specifying here for clarity.
+          GH_TOKEN: ${{ secrets.DEPENDENCY_TOKEN }}
         run: |
           echo "Running Dependency Updater Script..."
           bash dependency-updater.sh || {
-            echo "❌ Error occurred while running dependency-updater.sh. Check the log below."
-            cat dependency-updater.log
+            echo "❌ Error occurred while running dependency-updater.sh."
             exit 1
           }
           echo "Dependency update completed successfully."
+
+      - name: Run Python Tests (if applicable)
+        run: |
+          if [[ -f "requirements.txt" ]]; then
+            echo "Running Python tests..."
+            if ! command -v pytest &> /dev/null; then
+              echo "Installing pytest..."
+              pip install pytest
+            fi
+            pytest || { echo "❌ Tests failed"; exit 1; }
+          else
+            echo "No Python dependencies found, skipping tests."
+          fi
 
       - name: Review results if failed
         if: failure()
         run: |
           echo "Dependency Update Failed. Check the logs for details."
-          cat dependency-updater.log
