@@ -12,7 +12,7 @@ jobs:
   update_dependencies:
     runs-on: ubuntu-latest
     env:
-      TOKEN: ${{ secrets.TOKEN }}
+      TOKEN: ${{ secrets.DEPENDENCY_TOKEN }}
       USERNAME: "apoorv-katiyar"
       EMAILID: "katiyar.apoorv97@gmail.com"
 
@@ -24,15 +24,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # - name: Set up Python
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: "3.10"  # Using a stable version
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"  # Adjust Python version as needed
 
       - name: Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y openjdk-11-jdk gh  # Java & GitHub CLI
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-tools pytest
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -59,6 +64,19 @@ jobs:
             exit 1
           }
           echo "Dependency update completed successfully."
+
+      - name: Run Python Tests (if applicable)
+        run: |
+          if [[ -f "requirements.txt" ]]; then
+            echo "Running Python tests..."
+            if ! command -v pytest &> /dev/null; then
+              echo "Installing pytest..."
+              pip install pytest
+            fi
+            pytest || { echo "❌ Tests failed"; exit 1; }
+          else
+            echo "No Python dependencies found, skipping tests."
+          fi
 
       - name: Review results if failed
         if: failure()

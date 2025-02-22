@@ -14,8 +14,8 @@ dependencies_detection() {
     echo "📂 Checking for dependencies file..."
     if [[ -f "package.json" ]]; then
         echo "package.json"
-    # elif [[ -f "requirements.txt" ]]; then
-    #     echo "requirements.txt"
+    elif [[ -f "requirements.txt" ]]; then
+        echo "requirements.txt"
     elif [[ -f "Dockerfile" ]]; then
         echo "Dockerfile"
     elif [[ -f "pom.xml" || -f "build.gradle" ]]; then
@@ -36,19 +36,22 @@ dependencies_update() {
         npm install
         ;;
 
-    # "requirements.txt")
-    #     echo "🔄 Updating Python dependencies..."
+    "requirements.txt")
+        echo "🔄 Updating Python dependencies..."
         
-    #     # Extract outdated package names and upgrade them
-    #     outdated_packages=$(pip list --outdated --format=columns | awk 'NR>2 {print $1}')
-
-    #     if [[ -n "$outdated_packages" ]]; then
-    #         echo "Upgrading: $outdated_packages"
-    #         echo "$outdated_packages" | xargs -n1 pip install --upgrade
-    #     else
-    #         echo "✅ All dependencies are already up to date."
-    #     fi
-    #     ;;
+        # Store outdated dependencies before upgrading
+        pip list --outdated > outdated_packages.txt
+        
+        # Extract outdated package names and upgrade them
+        outdated_packages=$(awk 'NR>2 {print $1}' outdated_packages.txt)
+        
+        if [[ -n "$outdated_packages" ]]; then
+            echo "Upgrading: $outdated_packages"
+            echo "$outdated_packages" | xargs -n1 pip install --upgrade
+        else
+            echo "✅ All dependencies are already up to date."
+        fi
+        ;;
 
     "Dockerfile")
         echo "🔄 Updating Docker base images..."
@@ -103,12 +106,12 @@ run_test() {
     if [[ -f "package.json" ]]; then
         npm test || { echo "❌ Tests failed"; exit 1; }
     
-    # elif [[ -f "requirements.txt" ]]; then
-    #     if ! command -v pytest &> /dev/null; then
-    #         echo "⚠️ pytest not found. Installing pytest..."
-    #         pip install pytest
-    #     fi
-    #     pytest || { echo "❌ Tests failed"; exit 1; }
+    elif [[ -f "requirements.txt" ]]; then
+        if ! command -v pytest &> /dev/null; then
+            echo "⚠️ pytest not found. Installing pytest..."
+            pip install pytest
+        fi
+        pytest || { echo "❌ Tests failed"; exit 1; }
     
     elif [[ -f "pom.xml" || -f "build.gradle" ]]; then
         mvn test || { echo "❌ Tests failed"; exit 1; }
@@ -116,7 +119,6 @@ run_test() {
     
     echo "✅ All tests passed successfully"
 }
-
 
 # Generate the Changelog
 generate_changelog() {
@@ -126,9 +128,9 @@ generate_changelog() {
         ncu > changelog.txt
         ;;
 
-    # "requirements.txt")
-    #     pip list --outdated > changelog.txt
-    #     ;;
+    "requirements.txt")
+        cat outdated_packages.txt > changelog.txt
+        ;;
 
     "Dockerfile")
         echo "Updated Docker base images to latest versions." > changelog.txt
