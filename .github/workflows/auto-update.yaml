@@ -24,24 +24,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # - name: Set up Python
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: "3.10"  # Using a stable version
-
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-11-jdk gh  # Java & GitHub CLI
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"  # Or "3.11", depending on project
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'  # Adjust as needed
+          node-version: '16'
 
-      - name: Install Node.js Tools
+      - name: Install Global Tools
         run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-11-jdk jq curl gh
           npm install -g npm-check-updates
+          pip install --upgrade pip
+          pip install pip-tools pytest
 
       - name: Configure Git
         run: |
@@ -58,10 +57,12 @@ jobs:
             cat dependency-updater.log
             exit 1
           }
-          echo "Dependency update completed successfully."
+          echo "✅ Dependency update completed successfully."
 
       - name: Review results if failed
         if: failure()
         run: |
-          echo "Dependency Update Failed. Check the logs for details."
+          echo "❌ Dependency Update Failed. Check the logs for details."
           cat dependency-updater.log
+          echo "Please review the changes and try again."
+          echo "If you need assistance, please contact the repository maintainer."
