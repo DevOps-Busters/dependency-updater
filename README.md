@@ -1,31 +1,28 @@
 # Dependency-Updater Script Documentation
 
-This script automates the process of updating dependencies for Node.js, Python, and Docker projects. It detects the type of dependency file, updates the dependencies, runs tests, generates changelogs, commits the changes, and creates a pull request.
+This script automates the process of updating dependencies for Node.js, and Docker projects. It detects the type of dependency file, updates the dependencies, runs tests, generates changelogs, commits the changes, and creates a pull request.
 
 ## Table of Contents
 
-1. [Prerequisites](#prerequisites)
-2. [Script Overview](#script-overview)
-   1. [Constants](#constants)
-   2. [Functions](#functions)
-      1. [dependencies_detection](#dependencies_detection)
-      2. [dependencies_update](#dependencies_update)
-      3. [run_test](#run_test)
-      4. [generate_changelog](#generate_changelog)
-      5. [commit_and_push](#commit_and_push)
-      6. [create_pull_request](#create_pull_request)
-   3. [Main Function](#main-function)
-3. [Usage](#usage)
+- [Dependency-Updater Script Documentation](#dependency-updater-script-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Script Overview](#script-overview)
+    - [Constants](#constants)
+    - [Functions](#functions)
+      - [`dependencies_detection`](#dependencies_detection)
+      - [`dependencies_update`](#dependencies_update)
+      - [`run_test`](#run_test)
+      - [`generate_changelog`](#generate_changelog)
+      - [`commit_and_push`](#commit_and_push)
+      - [`create_pull_request`](#create_pull_request)
+    - [Main Function](#main-function)
 
 ## Prerequisites
 
 - **Node.js and npm** (for Node.js projects)
 - **ncu (npm-check-updates)** installed globally (`npm install -g npm-check-updates`)
-- **Python and pip** (for Python projects)
-- **pip-review** installed (`pip install pip-review`)
 - **Docker** (for Docker projects)
-- **gh (GitHub CLI)** installed and authenticated
-- **pytest** (for Python projects with tests)
 
 ## Script Overview
 
@@ -49,7 +46,6 @@ Detects the type of dependency file in the project directory.
 Updates the dependencies based on the detected dependency file.
 
 - For `package.json`: Runs `ncu -u` and `npm install`.
-- For `requirements.txt`: Runs `pip-review --auto`.
 - For `Dockerfile`: Updates the base image to the latest version.
 
 #### `run_test`
@@ -64,7 +60,6 @@ Runs tests based on the detected dependency file.
 Generates a changelog based on the detected dependency file.
 
 - For `package.json`: Runs `ncu` and saves the output to `changelog.txt`.
-- For `requirements.txt`: Runs `pip-review` and saves the output to `changelog.txt`.
 - For `Dockerfile`: Writes a message indicating the Docker base image was updated to `changelog.txt`.
 
 #### `commit_and_push`
