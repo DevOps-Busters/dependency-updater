@@ -17,8 +17,6 @@ dependencies_detection() {
         echo "Dockerfile"
     elif find . -name "pom.xml" -o -name "build.gradle" | grep -q .; then
         echo "Java"
-    elif find . -name "requirements.txt" -o -name "pyproject.toml" | grep -q .; then
-        echo "Python"
     else
         echo "No dependencies file found"
         exit 0
@@ -63,20 +61,6 @@ dependencies_update() {
         fi
         ;;
 
-    "Python")
-        echo "🔄 Updating Python dependencies..."
-        if command -v pip-compile &> /dev/null; then
-            # If pip-tools is installed, use it
-            pip-compile --upgrade
-        elif [[ -f "requirements.txt" ]]; then
-            pip install --upgrade -r requirements.txt
-            pip freeze > requirements.txt
-        else
-            echo "❌ Python dependencies file not found."
-            exit 1
-        fi
-        ;;
-
     *)
         echo "❌ Unsupported dependencies file format: $1"
         exit 1
@@ -92,13 +76,6 @@ run_test() {
 
     elif [[ -f "pom.xml" || -f "build.gradle" ]]; then
         mvn test || { echo "❌ Tests failed"; exit 1; }
-
-    elif [[ -f "requirements.txt" || -f "pyproject.toml" ]]; then
-        if [[ -f "pytest.ini" || -d "tests" ]]; then
-            pytest || { echo "❌ Tests failed"; exit 1; }
-        else
-            echo "⚠️ No Python tests found, skipping test step."
-        fi
     fi
 
     echo "✅ All tests passed successfully"
@@ -116,9 +93,6 @@ generate_changelog() {
         ;;
     "Java")
         echo "Updated Java dependencies to latest versions." > changelog.txt
-        ;;
-    "Python")
-        echo "Updated Python dependencies using pip or pip-tools." > changelog.txt
         ;;
     esac
     echo "✅ Changelog generated successfully"
